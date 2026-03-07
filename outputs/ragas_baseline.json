@@ -1,0 +1,175 @@
+{
+  "mode": "baseline",
+  "timestamp": "2026-03-07T02:12:52.301034",
+  "total_cases": 12,
+  "results": [
+    {
+      "question": "Qui a marque le plus de points cette saison ?",
+      "ground_truth": "Shai Gilgeous-Alexander a la meilleure moyenne de points.",
+      "category": "simple",
+      "answer": "Cette saison, Shai Gilgeous-Alexander a marqué le plus de points avec un total de 2485 points.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Qui a marque le plus de points cette saison ?"
+      ],
+      "faithfulness": 0.95,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.9,
+      "context_recall": 1.0,
+      "overall_score": 0.9625
+    },
+    {
+      "question": "Quel joueur a le meilleur pourcentage a 3 points avec plus de 100 tentatives ?",
+      "ground_truth": "Le joueur avec le meilleur 3P% parmi ceux avec fg3a >= 100.",
+      "category": "simple",
+      "answer": "Shai Gilgeous-Alexander a le meilleur pourcentage à 3 points avec 43.3% de réussite sur 159 tentatives cette saison.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Quel joueur a le meilleur pourcentage a 3 points avec plus de 100 tentatives ?"
+      ],
+      "faithfulness": 0.5,
+      "answer_relevancy": 0.5,
+      "context_precision": 0.95,
+      "context_recall": 1.0,
+      "overall_score": 0.7375
+    },
+    {
+      "question": "Combien de joueurs ont realise plus de 5 triple-doubles cette saison ?",
+      "ground_truth": "Reponse basee sur le champ TD3.",
+      "category": "simple",
+      "answer": "7 joueurs ont réalisé plus de 5 triple-doubles cette saison.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Combien de joueurs ont realise plus de 5 triple-doubles cette saison ?"
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.9,
+      "context_recall": 0.0,
+      "overall_score": 0.7
+    },
+    {
+      "question": "Quelle est la moyenne de points de l'equipe OKC ?",
+      "ground_truth": "La moyenne des points des joueurs d'OKC.",
+      "category": "simple",
+      "answer": "La moyenne de points de l'équipe OKC est de 548.9 points par match.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Quelle est la moyenne de points de l'equipe OKC ?"
+      ],
+      "faithfulness": 0.2,
+      "answer_relevancy": 0.5,
+      "context_precision": 0.9,
+      "context_recall": 0.0,
+      "overall_score": 0.4
+    },
+    {
+      "question": "Compare les stats defensives de Rudy Gobert et Brook Lopez.",
+      "ground_truth": "Comparaison des stats defensives entre Gobert et Lopez.",
+      "category": "complex",
+      "answer": "Voici les statistiques défensives de Rudy Gobert et Brook Lopez :\n\n- **Brook Lopez** (Milwaukee Bucks) :\n  - **Contres** : 152\n  - **Interceptions** : 48\n  - **Defense Rating** : 112.7\n  - **Fautes personnelles** : 168\n\n- **Rudy Gobert** (Minnesota Timberwolves) :\n  - **Contres** : 101\n  - **Interceptions** : 58\n  - **Defense Rating** : 107.6\n  - **Fautes personnelles** : 180\n\nRudy Gobert a un meilleur defense rating (107.6 contre 112.7), mais Lopez a plus de contres (152 contre 101). Gobert a aussi plus d'interceptions (58 contre 48). Lopez commet moins de fautes (168 contre 180).",
+      "contexts": [
+        "Reponse generee par l'agent pour : Compare les stats defensives de Rudy Gobert et Brook Lopez."
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.95,
+      "context_recall": 1.0,
+      "overall_score": 0.9375
+    },
+    {
+      "question": "Quelle equipe a le meilleur Net Rating moyen ?",
+      "ground_truth": "L'equipe avec le NETRTG moyen le plus eleve.",
+      "category": "complex",
+      "answer": "L'équipe des OKC a le meilleur Net Rating moyen avec une valeur de 7.73.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Quelle equipe a le meilleur Net Rating moyen ?"
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.9,
+      "context_recall": 1.0,
+      "overall_score": 0.95
+    },
+    {
+      "question": "Identifie les joueurs avec plus de 20 pts, 8 reb et 5 ast par match.",
+      "ground_truth": "Joueurs avec PTS>20, REB>8, AST>5.",
+      "category": "complex",
+      "answer": "Voici les joueurs avec plus de 20 points, 8 rebonds et 5 passes décisives par match :\n\n1. **Shai Gilgeous-Alexander** (OKC) - 24.8 pts, 5.0 reb, 6.4 ast\n2. **Anthony Edwards** (MIN) - 27.6 pts, 5.7 reb, 4.5 ast\n3. **Nikola Jokić** (DEN) - 29.6 pts, 12.7 reb, 8.8 ast\n4. **Giannis Antetokounmpo** (MIL) - 30.6 pts, 11.9 reb, 6.6 ast\n5. **Jayson Tatum** (BOS) - 26.8 pts, 8.7 reb, 5.9 ast\n6. **Devin Booker** (PHX) - 25.6 pts, 4.1 reb, 6.9 ast\n7. **Tyler Herro** (MIA) - 23.9 pts, 5.2 reb, 5.5 ast\n8. **Trae Young** (ATL) - 24.3 pts, 3.1 reb, 11.6 ast\n9. **Cade Cunningham** (DET) - 26.1 pts, 6.1 reb, 9.1 ast\n10. **James Harden** (LAC) - 22.8 pts, 5.8 reb, 8.7 ast\n11. **Karl-Anthony Towns** (NYK) - 24.4 pts, 12.8 reb, 3.1 ast\n12. **Zach LaVine** (SAC) - 23.3 pts, 4.3 reb, 4.2 ast\n13. **Jalen Green** (HOU) - 21.0 pts, 4.6 reb, 3.4 ast\n14. **Stephen Curry** (GSW) - 24.5 pts, 4.4 reb, 6.0 ast\n15. **DeMar DeRozan** (SAC) - 22.2 pts, 3.9 reb, 4.4 ast\n16. **LeBron James** (LAL) - 24.4 pts, 7.8 reb, 8.2 ast\n17. **Donovan Mitchell** (CLE) - 24.1 pts, 4.5 reb, 5.0 ast\n18. **Jalen Brunson** (NYK) - 25.9 pts, 2.9 reb, 6.2 ast\n19. **Kevin Durant** (PHX) - 26.6 pts, 6.0 reb, 4.2 ast\n20. **Jaren Jackson Jr.** (MEM) - 22.2 pts, 5.6 reb, 2.0 ast\n\nCes joueurs ont tous dépassé les seuils demandés en points, rebonds et passes décisives par match.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Identifie les joueurs avec plus de 20 pts, 8 reb et 5 ast par match."
+      ],
+      "faithfulness": 0.7,
+      "answer_relevancy": 0.65,
+      "context_precision": 0.95,
+      "context_recall": 0.9,
+      "overall_score": 0.8
+    },
+    {
+      "question": "Relation entre Usage Rate et points pour les joueurs de plus de 30 matchs.",
+      "ground_truth": "Analyse USG% vs PTS pour GP > 30.",
+      "category": "complex",
+      "answer": "Voici les 20 joueurs avec le plus haut usage rate (pourcentage d'implications dans les attaques de leur équipe) et leurs points ajustés (pts * g / 100) :\n\n1. Giannis Antetokounmpo : 34.6% usage rate, 1364.79 points ajustés\n2. LaMelo Ball : 34.2% usage rate, 556.48 points ajustés\n3. Shai Gilgeous-Alexander : 33.6% usage rate, 1888.6 points ajustés\n4. Paolo Banchero : 33.0% usage rate, 547.86 points ajustés\n5. Luka Dončić : 32.8% usage rate, 705.0 points ajustés\n6. Cade Cunningham : 32.3% usage rate, 1278.9 points ajustés\n7. Ja Morant : 31.2% usage rate, 580.0 points ajustés\n8. Anthony Edwards : 30.7% usage rate, 1722.2 points ajustés\n9. Franz Wagner : 30.6% usage rate, 871.2 points ajustés\n10. Jayson Tatum : 30.1% usage rate, 1389.6 points ajustés\n11. Anthony Davis : 30.1% usage rate, 642.6 points ajustés\n12. Victor Wembanyama : 30.0% usage rate, 514.28 points ajustés\n13. Donovan Mitchell : 29.8% usage rate, 1209.84 points ajustés\n14. Tyrese Maxey : 29.3% usage rate, 711.36 points ajustés\n15. LeBron James : 29.1% usage rate, 1195.6 points ajustés\n16. Jalen Brunson : 28.9% usage rate, 1098.5 points ajustés\n17. James Harden : 28.6% usage rate, 1422.79 points ajustés\n18. Stephen Curry : 28.6% usage rate, 1200.5 points ajustés\n19. Nikola Jokić : 28.5% usage rate, 1450.4 points ajustés\n20. Devin Booker : 28.5% usage rate, 1440.0 points ajustés\n\nOn observe que les joueurs avec un usage rate élevé ne sont pas forcément ceux qui marquent le plus de points. Par exemple, Giannis Antetokounmpo a le plus haut usage rate mais n'est pas le plus haut en points ajustés. À l'inverse, Shai Gilgeous-Alexander et Anthony Edwards ont des usage rates élevés et des points ajustés très élevés.\n\nSouhaites-tu une visualisation graphique de ces données ?",
+      "contexts": [
+        "Reponse generee par l'agent pour : Relation entre Usage Rate et points pour les joueurs de plus de 30 matchs."
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.95,
+      "context_recall": 0.9,
+      "overall_score": 0.9125
+    },
+    {
+      "question": "c ki le mieux joueur nba cette saison niveau attaque ??",
+      "ground_truth": "Le meilleur attaquant malgre la formulation incorrecte.",
+      "category": "noisy",
+      "answer": "Voici le top 5 des joueurs NBA de cette saison au niveau de l'attaque (points + passes décisives) :\n\n1. Shai Gilgeous-Alexander (OKC) : 2485 points et 486 passes décisives\n2. Anthony Edwards (MIN) : 2180 points et 356 passes décisives\n3. Nikola Jokić (DEN) : 2072 points et 714 passes décisives\n4. Giannis Antetokounmpo (MIL) : 2037 points et 436 passes décisives\n5. Jayson Tatum (BOS) : 1930 points et 432 passes décisives\n\nShai Gilgeous-Alexander se distingue par son excellente performance offensive, combinant un nombre élevé de points et de passes décisives.",
+      "contexts": [
+        "Reponse generee par l'agent pour : c ki le mieux joueur nba cette saison niveau attaque ??"
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.9,
+      "context_precision": 0.9,
+      "context_recall": 0.9,
+      "overall_score": 0.9
+    },
+    {
+      "question": "Donne moi les stats du joueur numero 23",
+      "ground_truth": "Numero 23 peut etre LeBron James.",
+      "category": "noisy",
+      "answer": "Je n'ai pas de statistiques pour le joueur numéro 23 dans ma base de données. Vérifie que le numéro de joueur est correct ou précise un autre joueur.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Donne moi les stats du joueur numero 23"
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.7,
+      "context_precision": 0.9,
+      "context_recall": 0.5,
+      "overall_score": 0.75
+    },
+    {
+      "question": "Qui est le meilleur joueur cette annee en performance globale ?",
+      "ground_truth": "Le PIE est la metrique la plus adaptee.",
+      "category": "noisy",
+      "answer": "Le meilleur joueur cette année en performance globale est Nikola Jokić avec des moyennes impressionnantes :\n\n- Points par match : 24.6\n- Rebonds par match : 11.1\n- Passes décisives par match : 8.9\n- Interceptions par match : 1.6\n- Contre par match : 0.5\n\nCes statistiques montrent que Jokić excelle dans tous les aspects du jeu, ce qui en fait le joueur le plus complet de la saison.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Qui est le meilleur joueur cette annee en performance globale ?"
+      ],
+      "faithfulness": 0.95,
+      "answer_relevancy": 1.0,
+      "context_precision": 0.9,
+      "context_recall": 0.5,
+      "overall_score": 0.8375
+    },
+    {
+      "question": "Je veux les stats de l'equipe de Los Angeles",
+      "ground_truth": "LAL (Lakers) ou LAC (Clippers) ?",
+      "category": "noisy",
+      "answer": "Pourriez-vous préciser quelle équipe de Los Angeles vous intéresse ? Il y a les Lakers et les Clippers.",
+      "contexts": [
+        "Reponse generee par l'agent pour : Je veux les stats de l'equipe de Los Angeles"
+      ],
+      "faithfulness": 0.9,
+      "answer_relevancy": 0.7,
+      "context_precision": 0.9,
+      "context_recall": 0.5,
+      "overall_score": 0.75
+    }
+  ]
+}
