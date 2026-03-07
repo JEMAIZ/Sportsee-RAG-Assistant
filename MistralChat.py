@@ -95,8 +95,15 @@ if prompt := st.chat_input("Posez votre question NBA..."):
                     graph_data    = None
 
         st.markdown(response_text)
+      
         if graph_data:
-            st.image(graph_data, use_column_width=True)
+            import base64, io 
+            from PIL import Image
+            # Supprime le prefixe data:image/png;base64,
+            b64_data = graph_data.replace("data:image/png;base64,", "")
+            img_bytes = base64.b64decode(b64_data)
+            img = Image.open(io.BytesIO(img_bytes))
+            st.image(img, use_column_width=True)
 
     st.session_state.messages.append({
         "role":    "assistant",

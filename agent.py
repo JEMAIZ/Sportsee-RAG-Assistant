@@ -2,7 +2,9 @@
 import logging
 from typing import Optional
 
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+#from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain.agents import create_tool_calling_agent
+from langchain.agents import AgentExecutor
 from langchain.tools import tool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_mistralai import ChatMistralAI
@@ -15,5 +17,96 @@ logger = logging.getLogger(__name__)
 @tool
 def rag_tool(question: str) -> str:
     """
-    Recherche dans les documents textuels (rapports de matchs, analyses)
-    via le vector store FAISS. A utiliser pour les questions sur le contexte
+    Recherche dans les documents textuels via le vector store FAISS.
+    A utiliser pour les questions sur le contexte des matchs,
+    les analyses qualitatives, les commentaires de matchs.
+    """
+    try:
+        from utils.vector_store import VectorStoreManager
+        from utils.config import SEARCH_K
+
+        vsm = VectorStoreManager()
+        if vsm.index is None:
+            return "Index vectoriel non disponible. Executez d'abord python indexer.py"
+
+        results = vsm.search(question, k=SEARCH_K)
+        if not results:
+            return "Aucun document pertinent trouve pour cette question."
+
+        context_parts = []
+        for r in results:
+            source = r["metadata"].get("source", "Inconnue")
+            score  = r.get("score", 0)
+            context_parts.append(
+                f"[Source: {source} | Pertinence: {score:.1f}%]\n{r['text']}"
+            )
+        return "\n\n---\n\n".join(context_parts)
+
+    except Exception as e:
+        logger.error(f"Erreur RAG Tool: {e}")
+        return f"Erreur lors de la recherche documentaire : {e}"
+
+
+from sql_tool import sql_tool
+from plot_tool import plot_tool
+
+AGENT_SYSTEM_PROMPT = """Tu es NBA Analyst AI, un assistant expert en statistiques NBA pour SportSee.
+
+Tu as acces a 3 outils :
+
+1. rag_tool : Pour les questions sur le contenu textuel (commentaires de matchs,
+   analyses qualitatives, contexte narratif).
+
+2. sql_tool : Pour les questions chiffrees (stats, classements, comparaisons numeriques).
+   TOUJOURS utiliser ce tool pour les statistiques NBA.
+
+3. plot_tool : Pour generer des graphiques a partir de donnees chiffrees.
+   Utilise-le quand l'utilisateur demande un graphique ou une visualisation.
+
+REGLES :
+- Pour les statistiques NBA, utilise TOUJOURS sql_tool
+- Synthetise toujours la reponse en langage naturel clair
+- Si tu n'as pas assez d'informations, dis-le clairement
+- Reponds en francais
+"""
+
+
+def build_agent() -> AgentExecutor:
+    llm = ChatMistralAI(
+        api_key=MISTRAL_API_KEY,
+        model=MODEL_NAME,
+        temperature=0.1,
+    )
+    tools  = [rag_tool, sql_tool, plot_tool]
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", AGENT_SYSTEM_PROMPT),
+        MessagesPlaceholder("chat_history", optional=True),
+        ("human", "{input}"),
+        MessagesPlaceholder("agent_scratchpad"),
+    ])
+    agent = create_tool_calling_agent(llm, tools, prompt)
+    return AgentExecutor(
+        agent=agent,
+        tools=tools,
+        verbose=True,
+        max_iterations=5,
+        handle_parsing_errors=True,
+    )
+
+
+_agent_executor: Optional[AgentExecutor] = None
+
+
+def get_agent_response(question: str, chat_history: list = None) -> str:
+    global _agent_executor
+    if _agent_executor is None:
+        _agent_executor = build_agent()
+    try:
+        result = _agent_executor.invoke({
+            "input":        question,
+            "chat_history": chat_history or []
+        })
+        return result.get("output", "Desole, je n'ai pas pu generer de reponse.")
+    except Exception as e:
+        logger.error(f"Erreur agent: {e}")
+        return f"Erreur lors du traitement de votre question : {e}"
