@@ -38,3 +38,7 @@ DATABASE_URL = f"sqlite:///{DATABASE_FILE}" # URL pour SQLAlchemy
 # --- Configuration de l'Application ---
 APP_TITLE = "NBA Analyst AI"
 NAME = "NBA" # Nom à personnaliser dans l'interface
+
+# --- Ajout pour le pipeline ETL ---
+DB_PATH = os.getenv("DB_PATH", "database/sportsee.db")
+OUTPUTS_DIR = os.getenv("OUTPUTS_DIR", "outputs")
