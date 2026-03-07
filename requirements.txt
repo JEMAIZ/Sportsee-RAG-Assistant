@@ -1,15 +1,45 @@
-streamlit==1.44.1
-mistralai==0.4.2
+# === Interface ===
+streamlit
+
+# === LLM & RAG ===
 langchain==0.3.23
-faiss-cpu==1.10.0
-PyPDF2==3.0.1
-python-docx==1.1.2
-pandas==2.2.3
-openpyxl==3.1.5
-python-dotenv==1.1.0
-requests==2.32.3
-streamlit-feedback==0.1.4
-pymupdf>=1.22.0
-pillow>=9.0.0
-easyocr
+langchain-core==0.3.51
+langchain-community==0.3.21
+langchain-mistralai==0.2.4
+langchain-openai==0.2.14
+mistralai
+
+# === Vector Store ===
+faiss-cpu
+
+# === Base de donnees ===
+sqlalchemy
+
+# === Validation ===
+pydantic
+
+# === Evaluation ===
+ragas==0.1.21
+datasets
+pysbd
+rouge_score
+nest-asyncio
+
+# === Traitement fichiers ===
+PyPDF2
+python-docx
+pandas
+openpyxl
+pillow
+
+# === Visualisation ===
+matplotlib
+
+# === Utilitaires ===
+python-dotenv
+requests
 tqdm
+docstring-parser
+appdirs
+diskcache
+networkx
