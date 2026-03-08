@@ -93,14 +93,14 @@ if prompt := st.chat_input("Posez votre question NBA..."):
                     if "GRAPH_FILE:" in raw_output:
                         parts         = raw_output.split("GRAPH_FILE:", 1)
                         response_text = parts[0].strip() or "Voici le graphique :"
-                        img_path      = parts[1].strip()
+                        img_path      = parts[1].strip().rstrip(")").strip()
                     elif "GRAPH_BASE64:" in raw_output:
                         import base64
                         from pathlib import Path
                         from utils.config import OUTPUTS_DIR
                         parts         = raw_output.split("GRAPH_BASE64:", 1)
                         response_text = parts[0].strip() or "Voici le graphique :"
-                        b64_raw = parts[1].strip()
+                        b64_raw = parts[1].strip().rstrip(")").strip()
                         if "base64," in b64_raw:
                             b64_raw = b64_raw.split("base64,", 1)[1]
                         tmp_path = Path(OUTPUTS_DIR) / "graphs" / "temp_display.png"
