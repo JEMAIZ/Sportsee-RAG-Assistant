@@ -47,9 +47,9 @@ def get_teams():
         engine = get_engine()
         with engine.connect() as conn:
             rows = conn.execute(
-                text("SELECT team_name, abbreviation FROM teams ORDER BY team_name")
+                text("SELECT full_name, code FROM teams ORDER BY full_name")
             ).mappings().all()
-        return [f"{r['team_name']} ({r['abbreviation']})" for r in rows]
+        return [f"{r['full_name']} ({r['code']})" for r in rows]
     except Exception:
         return []
 
