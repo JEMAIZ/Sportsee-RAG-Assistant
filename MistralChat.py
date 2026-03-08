@@ -59,7 +59,9 @@ for message in st.session_state.messages:
         img_path = message.get("image_path")
         if img_path:
             try:
-                st.image(img_path, use_column_width=True)
+                from pathlib import Path
+                img_bytes = Path(img_path).read_bytes()
+                st.image(img_bytes, use_column_width=True)
             except Exception:
                 st.warning(f"Image non disponible : {img_path}")
 
@@ -115,7 +117,8 @@ if prompt := st.chat_input("Posez votre question NBA..."):
         st.markdown(response_text)
         if img_path:
             try:
-                st.image(img_path, use_column_width=True)
+                img_bytes = Path(img_path).read_bytes()
+                st.image(img_bytes, use_column_width=True)
             except Exception as e:
                 st.warning(f"Impossible d'afficher l'image : {e}")
 
