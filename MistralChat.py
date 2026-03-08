@@ -1,6 +1,7 @@
 # MistralChat.py
 import streamlit as st
 import logging
+from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -59,7 +60,6 @@ for message in st.session_state.messages:
         img_path = message.get("image_path")
         if img_path:
             try:
-                from pathlib import Path
                 img_bytes = Path(img_path).read_bytes()
                 st.image(img_bytes, use_column_width=True)
             except Exception:
