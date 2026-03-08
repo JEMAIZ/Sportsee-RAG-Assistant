@@ -1,7 +1,7 @@
 # plot_tool.py
 import json
 import logging
-import io
+import hashlib
 from pathlib import Path
 
 import matplotlib
@@ -82,16 +82,39 @@ CHART_FUNCTIONS = {
 }
 
 
+def _make_cache_key(data, chart_type, x_key, y_key, title) -> str:
+    """
+    Génère un hash MD5 court et déterministe basé sur les paramètres.
+    Les mêmes paramètres produisent toujours le même nom de fichier.
+    """
+    payload = json.dumps(
+        {"data": data, "chart_type": chart_type, "x_key": x_key, "y_key": y_key, "title": title},
+        sort_keys=True
+    )
+    return hashlib.md5(payload.encode()).hexdigest()[:10]
+
+
 def generate_chart(data, chart_type="bar", x_key="player",
                    y_key="pts", title="Statistiques NBA") -> str:
     """
-    Génère un graphique, le sauvegarde sur disque et retourne le chemin absolu.
-    On ne passe PLUS par base64 pour éviter la troncature LangChain.
+    Génère un graphique et le sauvegarde sur disque.
+    Si un graphique identique existe déjà (même hash), le retourne directement
+    sans le régénérer.
     """
     if not data:
         raise ValueError("Aucune donnée fournie pour le graphique.")
 
-    # Figure plus petite → fichier plus léger → affichage plus rapide
+    # Nom de fichier déterministe : titre_safe + hash des paramètres
+    safe_title = "".join(c if c.isalnum() or c in "_-" else "_" for c in title)[:30]
+    cache_key  = _make_cache_key(data, chart_type, x_key, y_key, title)
+    filepath   = GRAPHS_DIR / f"{safe_title}_{cache_key}.png"
+
+    # ── Cache hit : fichier déjà généré, on le retourne directement ──────────
+    if filepath.exists():
+        logger.info(f"Cache hit — graphique existant retourné : {filepath}")
+        return str(filepath.resolve())
+
+    # ── Cache miss : génération du graphique ─────────────────────────────────
     fig, ax = plt.subplots(figsize=(8, 5))
     fig.patch.set_facecolor("#FAFAFA")
     ax.set_facecolor("#F5F5F5")
@@ -100,14 +123,10 @@ def generate_chart(data, chart_type="bar", x_key="player",
     plot_fn(ax, data, x_key, y_key, title)
     plt.tight_layout()
 
-    # Nom de fichier sûr
-    safe_title = "".join(c if c.isalnum() or c in "_-" else "_" for c in title)[:40]
-    filepath = GRAPHS_DIR / f"{safe_title}.png"
-
-    # DPI réduit à 96 (suffisant pour écran, ~3x moins lourd qu'à 150)
     plt.savefig(filepath, format="png", dpi=96, bbox_inches="tight")
     plt.close(fig)
 
+    logger.info(f"Graphique généré et sauvegardé : {filepath}")
     return str(filepath.resolve())
 
 
@@ -152,8 +171,6 @@ def plot_tool(plot_request: str) -> str:
             y_key=params["y_key"],
             title=params["title"],
         )
-        logger.info(f"Graphique sauvegardé : {filepath}")
-        # Retourne un marqueur court — pas de base64 dans l'output LangChain
         return f"GRAPH_FILE:{filepath}"
     except Exception as e:
         logger.error(f"Erreur graphique: {e}")
