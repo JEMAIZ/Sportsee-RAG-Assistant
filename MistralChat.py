@@ -1,6 +1,7 @@
 # MistralChat.py
 import streamlit as st
 import logging
+import re
 from pathlib import Path
 
 logging.basicConfig(level=logging.INFO)
@@ -49,6 +50,22 @@ if "messages" not in st.session_state:
         "image_path": None
     }]
 
+# ── Fonction utilitaire : extraire proprement le chemin PNG ──────────────────
+def extract_img_path(raw: str):
+    """
+    Extrait le chemin absolu vers le .png dans l'output LangChain.
+    Gère les cas où LangChain colle du texte après le chemin.
+    Retourne (img_path, texte_supplementaire).
+    """
+    match = re.search(r'([A-Za-z]:[^\n]*?\.png|/[^\n]*?\.png)', raw)
+    if match:
+        img_path = match.group(1).rstrip(")").strip()
+        # Texte éventuel après le chemin
+        end      = match.end()
+        extra    = raw[end:].lstrip(")\n ").strip()
+        return img_path, extra
+    return None, raw.strip()
+
 # ── Header ────────────────────────────────────────────────────────────────────
 st.title(f"🏀 {APP_TITLE}")
 st.caption(f"{NAME} | Modèle: {MODEL_NAME} | Powered by LangChain + Mistral")
@@ -60,10 +77,9 @@ for message in st.session_state.messages:
         img_path = message.get("image_path")
         if img_path:
             try:
-                img_bytes = Path(img_path).read_bytes()
-                st.image(img_bytes, use_column_width=True)
-            except Exception:
-                st.warning(f"Image non disponible : {img_path}")
+                st.image(Path(img_path).read_bytes(), use_column_width=True)
+            except Exception as e:
+                st.warning(f"Image non disponible : {e}")
 
 # ── Nouvelle question ─────────────────────────────────────────────────────────
 if prompt := st.chat_input("Posez votre question NBA..."):
@@ -91,25 +107,30 @@ if prompt := st.chat_input("Posez votre question NBA..."):
                     raw_output = result.get("output", "Désolé, pas de réponse.")
 
                     if "GRAPH_FILE:" in raw_output:
-                        parts         = raw_output.split("GRAPH_FILE:", 1)
-                        response_text = parts[0].strip() or "Voici le graphique :"
-                        img_path      = parts[1].strip().rstrip(")").strip()
+                        parts        = raw_output.split("GRAPH_FILE:", 1)
+                        text_before  = parts[0].strip()
+                        img_path, extra = extract_img_path(parts[1])
+                        # Assemble le texte de réponse
+                        response_text = " ".join(filter(None, [text_before, extra])) or "Voici le graphique :"
+
                     elif "GRAPH_BASE64:" in raw_output:
                         import base64
-                        from pathlib import Path
                         from utils.config import OUTPUTS_DIR
                         parts         = raw_output.split("GRAPH_BASE64:", 1)
                         response_text = parts[0].strip() or "Voici le graphique :"
-                        b64_raw = parts[1].strip().rstrip(")").strip()
+                        b64_raw = parts[1].strip()
                         if "base64," in b64_raw:
                             b64_raw = b64_raw.split("base64,", 1)[1]
+                        b64_raw = b64_raw.split("\n")[0].rstrip(")")
                         tmp_path = Path(OUTPUTS_DIR) / "graphs" / "temp_display.png"
                         tmp_path.parent.mkdir(parents=True, exist_ok=True)
                         tmp_path.write_bytes(base64.b64decode(b64_raw))
                         img_path = str(tmp_path)
+
                     else:
                         response_text = raw_output
                         img_path      = None
+
                 except Exception as e:
                     response_text = f"❌ Erreur : {e}"
                     img_path      = None
@@ -117,8 +138,7 @@ if prompt := st.chat_input("Posez votre question NBA..."):
         st.markdown(response_text)
         if img_path:
             try:
-                img_bytes = Path(img_path).read_bytes()
-                st.image(img_bytes, use_column_width=True)
+                st.image(Path(img_path).read_bytes(), use_column_width=True)
             except Exception as e:
                 st.warning(f"Impossible d'afficher l'image : {e}")
 
