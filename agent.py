@@ -1,47 +1,36 @@
 # agent.py
-# agent.py  — tout en haut
-from dotenv import load_dotenv
-load_dotenv()  # ← charge .env AVANT logfire_setup
-import logging
 import os
+import logging
 from typing import Optional
+from dotenv import load_dotenv
+load_dotenv()
+
+# ── Logfire AVANT tout import LangChain ──────────────────────────────────────
+import logfire
+logfire.configure(
+    token=os.getenv("LOGFIRE_TOKEN"),
+    service_name="sportsee-rag",
+    send_to_logfire=bool(os.getenv("LOGFIRE_TOKEN")),
+)
+os.environ["LANGSMITH_OTEL_ENABLED"] = "true"
+os.environ["LANGSMITH_OTEL_ONLY"]    = "true"
+os.environ["LANGSMITH_TRACING"]      = "true"
+
+from utils.database import get_engine
+logfire.instrument_sqlalchemy(engine=get_engine())
+
+# ── Imports LangChain ─────────────────────────────────────────────────────────
 from langchain.agents import create_tool_calling_agent, AgentExecutor
 from langchain.tools import tool
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_mistralai import ChatMistralAI
 from utils.config import MISTRAL_API_KEY, MODEL_NAME
+from semantic_cache import get_cache
 
 logger = logging.getLogger(__name__)
 
-# ── Initialisation Logfire (avant tout import LangChain) ─────────────────────
-from logfire_setup import setup_logfire
-_logfire_ok = setup_logfire()
 
-# Import logfire pour les spans manuels (no-op si absent)
-try:
-    import logfire
-except ImportError:
-    logfire = None
-
-# ── Logfire + variables OTEL AVANT tout import LangChain ─────────────────────
-import logfire
-logfire.configure(
-    token=os.getenv("LOGFIRE_TOKEN"),
-    service_name="sportsee-rag",
-    send_to_logfire=True,
-)
-
-# Ces 3 variables DOIVENT être définies avant "from langchain..."
-os.environ["LANGSMITH_OTEL_ENABLED"] = "true"
-os.environ["LANGSMITH_OTEL_ONLY"]    = "true"
-os.environ["LANGSMITH_TRACING"]      = "true"
-
-# Instrumentation SQLAlchemy
-from utils.database import get_engine
-logfire.instrument_sqlalchemy(engine=get_engine())
-
-
-# ── RAG Tool ─────────────────────────────────────────────────────────────────
+# ── RAG Tool ──────────────────────────────────────────────────────────────────
 @tool
 def rag_tool(question: str) -> str:
     """
@@ -49,9 +38,6 @@ def rag_tool(question: str) -> str:
     A utiliser pour les questions sur le contexte des matchs,
     les analyses qualitatives, les commentaires de matchs.
     """
-    span = logfire.span("rag_tool", question=question) if logfire else None
-    if span:
-        span.__enter__()
     try:
         from utils.vector_store import VectorStoreManager
         from utils.config import SEARCH_K
@@ -68,21 +54,12 @@ def rag_tool(question: str) -> str:
             context_parts.append(
                 f"[Source: {source} | Pertinence: {score:.1f}%]\n{r['text']}"
             )
-        output = "\n\n---\n\n".join(context_parts)
-        if logfire and span:
-            logfire.info("rag_tool résultat", nb_results=len(results))
-        return output
+        return "\n\n---\n\n".join(context_parts)
     except Exception as e:
         logger.error(f"Erreur RAG Tool: {e}")
-        if logfire and span:
-            logfire.error("rag_tool erreur", error=str(e))
         return f"Erreur lors de la recherche documentaire : {e}"
-    finally:
-        if span:
-            span.__exit__(None, None, None)
 
 
-# ── Imports des autres tools ──────────────────────────────────────────────────
 from sql_tool  import sql_tool
 from plot_tool import plot_tool
 from team_tool import team_tool, list_teams_tool
@@ -106,15 +83,13 @@ Tu as acces a 5 outils :
                      Utilise-le quand l'utilisateur mentionne une equipe precise.
 
 5. list_teams_tool : Pour lister toutes les equipes disponibles dans la base.
-                     Utilise-le si l'utilisateur demande quelles equipes sont disponibles
-                     ou si team_tool ne trouve pas l'equipe demandee.
+                     Utilise-le si l'utilisateur demande quelles equipes sont disponibles.
 
 REGLES :
 - Pour les statistiques d'UNE equipe specifique, utilise TOUJOURS team_tool
 - Pour les statistiques generales (ligue entiere, classements), utilise sql_tool
 - Pour les graphiques, utilise plot_tool apres avoir obtenu les donnees
 - Synthetise toujours la reponse en langage naturel clair
-- Si tu n'as pas assez d'informations, dis-le clairement
 - Reponds en francais
 """
 
@@ -145,19 +120,40 @@ def build_agent() -> AgentExecutor:
 
 _agent_executor: Optional[AgentExecutor] = None
 
+
 def get_agent_response(question: str, chat_history: list = None) -> str:
+    """
+    Point d'entrée principal — vérifie le cache sémantique avant d'invoquer l'agent.
+    """
     global _agent_executor
+
+    # ── 1. Vérification cache sémantique ─────────────────────────────────────
+    cache = get_cache()
+    cached = cache.get(question)
+    if cached:
+        with logfire.span("agent.cache_hit", question=question):
+            logfire.info("Réponse servie depuis le cache sémantique")
+        return cached
+
+    # ── 2. Appel agent LangChain ──────────────────────────────────────────────
     if _agent_executor is None:
         _agent_executor = build_agent()
+
     try:
-        with (logfire.span("agent.invoke", question=question) if logfire else __import__('contextlib').nullcontext()):
+        with logfire.span("agent.invoke", question=question):
             result = _agent_executor.invoke({
                 "input":        question,
                 "chat_history": chat_history or []
             })
-        return result.get("output", "Desole, je n'ai pas pu generer de reponse.")
+        response = result.get("output", "Desole, je n'ai pas pu generer de reponse.")
+
+        # ── 3. Stockage en cache (seulement les réponses texte, pas les graphiques)
+        if "GRAPH_FILE:" not in response and "GRAPH_BASE64:" not in response:
+            cache.set(question, response)
+
+        return response
+
     except Exception as e:
         logger.error(f"Erreur agent: {e}")
-        if logfire:
-            logfire.error("agent.invoke erreur", error=str(e))
+        logfire.error("agent.invoke erreur", error=str(e))
         return f"Erreur lors du traitement de votre question : {e}"
