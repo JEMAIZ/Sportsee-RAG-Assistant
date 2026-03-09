@@ -15,49 +15,29 @@ logger = logging.getLogger(__name__)
 
 
 def setup_logfire():
-    """
-    Configure Logfire et instrumente les packages du projet.
-    Retourne True si l'initialisation a réussi, False sinon.
-    """
     try:
         import logfire
     except ImportError:
-        logger.warning("logfire non installé — observabilité désactivée. "
-                       "Installez-le avec : pip install logfire")
+        logger.warning("logfire non installé.")
         return False
 
-    token = os.getenv("LOGFIRE_TOKEN")
-    if not token:
-        logger.warning("LOGFIRE_TOKEN absent dans .env — traces envoyées en local seulement.")
+    token = os.getenv("LOGFIRE_TOKEN", "").strip()
 
-    # ── 1. Configuration principale Logfire ──────────────────────────────────
+    if not token:
+        logger.warning("LOGFIRE_TOKEN absent — traces désactivées.")
+        logfire.configure(send_to_logfire=False, service_name="sportsee-rag")
+        return True
+
+    # Force le token explicitement
     logfire.configure(
-        token=os.getenv("LOGFIRE_TOKEN"), 
+        token=token,                    # ← passage explicite
         service_name="sportsee-rag",
         service_version="1.0.0",
         environment=os.getenv("ENV", "development"),
-        # Si pas de token, affiche les traces dans la console
-        send_to_logfire=bool(token),
+        send_to_logfire=True,
     )
-
-    # ── 2. Instrumentation LangChain via OpenTelemetry ───────────────────────
-    # Ces variables DOIVENT être définies AVANT l'import de langchain
-    os.environ.setdefault("LANGSMITH_OTEL_ENABLED", "true")
-    os.environ.setdefault("LANGSMITH_OTEL_ONLY",    "true")
-    os.environ.setdefault("LANGSMITH_TRACING",      "true")
-
-    # ── 3. Instrumentation SQLAlchemy ────────────────────────────────────────
-    try:
-        from utils.database import get_engine
-        engine = get_engine()
-        logfire.instrument_sqlalchemy(engine=engine)
-        logger.info("Logfire : SQLAlchemy instrumenté.")
-    except Exception as e:
-        logger.warning(f"Logfire : impossible d'instrumenter SQLAlchemy : {e}")
-
-    logger.info("Logfire initialisé — service: sportsee-rag")
+    logger.info(f"Logfire initialisé avec token : {token[:12]}...")
     return True
-
 
 # ── Décorateurs utilitaires pour les tools ───────────────────────────────────
 def logfire_span(name: str):
