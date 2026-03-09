@@ -32,9 +32,8 @@ def setup_logfire():
     logfire.configure(
         service_name="sportsee-rag",
         service_version="1.0.0",
-        environment=os.getenv("ENV", "development"),
+        #environment=os.getenv("ENV", "development"),
         send_to_logfire=True,   
-        advanced=logfire.AdvancedOptions(base_url="https://logfire-eu.pydantic.dev")  # ← correct    
     )
     logger.info(f"Logfire initialisé avec token : {token[:12]}...")
     return True
