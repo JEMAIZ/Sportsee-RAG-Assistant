@@ -112,6 +112,5 @@ Le workflow GitHub Actions se déclenche automatiquement sur chaque push touchan
 
 ## Limites
 
-- Données saison régulière uniquement (pas les playoffs)
 - Questions très ambiguës peuvent générer du SQL incorrect
 - Python 3.14 : warnings Pydantic V1 non bloquants
