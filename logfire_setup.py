@@ -32,6 +32,7 @@ def setup_logfire():
 
     # ── 1. Configuration principale Logfire ──────────────────────────────────
     logfire.configure(
+        token=os.getenv("LOGFIRE_TOKEN"), 
         service_name="sportsee-rag",
         service_version="1.0.0",
         environment=os.getenv("ENV", "development"),
