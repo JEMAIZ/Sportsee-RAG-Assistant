@@ -34,7 +34,7 @@ def setup_logfire():
         service_name="sportsee-rag",
         service_version="1.0.0",
         environment=os.getenv("ENV", "development"),
-        send_to_logfire=True,
+        send_to_logfire=True,        
     )
     logger.info(f"Logfire initialisé avec token : {token[:12]}...")
     return True
