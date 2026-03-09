@@ -1,4 +1,7 @@
 # agent.py
+# agent.py  — tout en haut
+from dotenv import load_dotenv
+load_dotenv()  # ← charge .env AVANT logfire_setup
 import logging
 import os
 from typing import Optional
