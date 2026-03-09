@@ -1,24 +1,23 @@
 # === Interface ===
 streamlit
 
-# === LLM & RAG ===
+# === LLM & Agent ===
 langchain==0.3.23
 langchain-core==0.3.51
 langchain-community==0.3.21
 langchain-mistralai==0.2.4
-langchain-openai==0.2.14
 mistralai
 
 # === Vector Store ===
 faiss-cpu
 
-# === Base de donnees ===
+# === Base de données ===
 sqlalchemy
 
 # === Validation ===
 pydantic
 
-# === Evaluation ===
+# === Évaluation ===
 ragas==0.1.21
 datasets
 pysbd
@@ -26,20 +25,18 @@ rouge_score
 nest-asyncio
 
 # === Traitement fichiers ===
-PyPDF2
-python-docx
 pandas
 openpyxl
+PyPDF2
 pillow
 
 # === Visualisation ===
 matplotlib
 
+# === Observabilité ===
+logfire[sqlalchemy]
+
 # === Utilitaires ===
 python-dotenv
 requests
 tqdm
-docstring-parser
-appdirs
-diskcache
-networkx
