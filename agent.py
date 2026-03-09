@@ -1,7 +1,7 @@
 # agent.py
 # agent.py  — tout en haut
-#from dotenv import load_dotenv
-#load_dotenv()  # ← charge .env AVANT logfire_setup
+from dotenv import load_dotenv
+load_dotenv()  # ← charge .env AVANT logfire_setup
 import logging
 import os
 from typing import Optional
@@ -22,6 +22,23 @@ try:
     import logfire
 except ImportError:
     logfire = None
+
+# ── Logfire + variables OTEL AVANT tout import LangChain ─────────────────────
+import logfire
+logfire.configure(
+    token=os.getenv("LOGFIRE_TOKEN"),
+    service_name="sportsee-rag",
+    send_to_logfire=True,
+)
+
+# Ces 3 variables DOIVENT être définies avant "from langchain..."
+os.environ["LANGSMITH_OTEL_ENABLED"] = "true"
+os.environ["LANGSMITH_OTEL_ONLY"]    = "true"
+os.environ["LANGSMITH_TRACING"]      = "true"
+
+# Instrumentation SQLAlchemy
+from utils.database import get_engine
+logfire.instrument_sqlalchemy(engine=get_engine())
 
 
 # ── RAG Tool ─────────────────────────────────────────────────────────────────
