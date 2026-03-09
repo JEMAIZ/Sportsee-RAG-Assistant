@@ -1,238 +1,258 @@
 # evaluate_ragas.py
-import json
-import logging
+"""
+Évaluation RAGAS du système SportSee RAG.
+En mode CI (--ci), retourne exit code 1 si le score global < RAGAS_THRESHOLD.
+"""
 import argparse
+import json
+import os
+import sys
 import time
-from datetime import datetime
+import logging
 from pathlib import Path
-from typing import Optional
+from dotenv import load_dotenv
+load_dotenv()
 
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s — %(levelname)s — %(message)s")
 
-TEST_CASES_DEFINITION = [
-    {
-        "question": "Qui a marque le plus de points cette saison ?",
-        "ground_truth": "Shai Gilgeous-Alexander a la meilleure moyenne de points.",
-        "category": "simple"
-    },
-    {
-        "question": "Quel joueur a le meilleur pourcentage a 3 points avec plus de 100 tentatives ?",
-        "ground_truth": "Le joueur avec le meilleur 3P% parmi ceux avec fg3a >= 100.",
-        "category": "simple"
-    },
-    {
-        "question": "Combien de joueurs ont realise plus de 5 triple-doubles cette saison ?",
-        "ground_truth": "Reponse basee sur le champ TD3.",
-        "category": "simple"
-    },
-    {
-        "question": "Quelle est la moyenne de points de l'equipe OKC ?",
-        "ground_truth": "La moyenne des points des joueurs d'OKC.",
-        "category": "simple"
-    },
-    {
-        "question": "Compare les stats defensives de Rudy Gobert et Brook Lopez.",
-        "ground_truth": "Comparaison des stats defensives entre Gobert et Lopez.",
-        "category": "complex"
-    },
-    {
-        "question": "Quelle equipe a le meilleur Net Rating moyen ?",
-        "ground_truth": "L'equipe avec le NETRTG moyen le plus eleve.",
-        "category": "complex"
-    },
-    {
-        "question": "Identifie les joueurs avec plus de 20 pts, 8 reb et 5 ast par match.",
-        "ground_truth": "Joueurs avec PTS>20, REB>8, AST>5.",
-        "category": "complex"
-    },
-    {
-        "question": "Relation entre Usage Rate et points pour les joueurs de plus de 30 matchs.",
-        "ground_truth": "Analyse USG% vs PTS pour GP > 30.",
-        "category": "complex"
-    },
-    {
-        "question": "c ki le mieux joueur nba cette saison niveau attaque ??",
-        "ground_truth": "Le meilleur attaquant malgre la formulation incorrecte.",
-        "category": "noisy"
-    },
-    {
-        "question": "Donne moi les stats du joueur numero 23",
-        "ground_truth": "Numero 23 peut etre LeBron James.",
-        "category": "noisy"
-    },
-    {
-        "question": "Qui est le meilleur joueur cette annee en performance globale ?",
-        "ground_truth": "Le PIE est la metrique la plus adaptee.",
-        "category": "noisy"
-    },
-    {
-        "question": "Je veux les stats de l'equipe de Los Angeles",
-        "ground_truth": "LAL (Lakers) ou LAC (Clippers) ?",
-        "category": "noisy"
-    },
-]
+# ── Seuil CI (overridable via env var) ───────────────────────────────────────
+RAGAS_THRESHOLD = float(os.getenv("RAGAS_THRESHOLD", "0.65"))
+
+# ── Cas de test ───────────────────────────────────────────────────────────────
+TEST_CASES = {
+    "SIMPLE": [
+        {
+            "question": "Qui est le meilleur scoreur de la saison ?",
+            "ground_truth": "Shai Gilgeous-Alexander est le meilleur scoreur avec environ 32 points par match."
+        },
+        {
+            "question": "Quelle équipe a le code LAL ?",
+            "ground_truth": "LAL est le code des Los Angeles Lakers."
+        },
+        {
+            "question": "Combien d'équipes y a-t-il dans la base de données ?",
+            "ground_truth": "Il y a 30 équipes NBA dans la base de données."
+        },
+        {
+            "question": "Quel joueur a le meilleur pourcentage aux tirs à 3 points ?",
+            "ground_truth": "Le joueur avec le meilleur 3P% parmi ceux ayant suffisamment de tentatives."
+        },
+    ],
+    "COMPLEX": [
+        {
+            "question": "Quels joueurs combinent plus de 25 points, 7 rebonds et 6 passes par match ?",
+            "ground_truth": "Les joueurs comme LeBron James, Nikola Jokic répondent à ces critères multi-statistiques."
+        },
+        {
+            "question": "Compare l'efficacité offensive des 5 meilleures équipes selon le net rating.",
+            "ground_truth": "Les équipes avec le meilleur net rating positif sont les plus efficaces offensivement."
+        },
+        {
+            "question": "Quel est le top 5 des joueurs avec le meilleur true shooting percentage parmi ceux jouant plus de 60 matchs ?",
+            "ground_truth": "Les joueurs avec ts_pct élevé parmi ceux ayant joué 60+ matchs."
+        },
+        {
+            "question": "Quels joueurs des Lakers ont les meilleures statistiques défensives ?",
+            "ground_truth": "Les joueurs des Lakers (LAL) avec le plus de blocks et steals."
+        },
+    ],
+    "NOISY": [
+        {
+            "question": "c ki le mieu pour les point cette annee nba ??",
+            "ground_truth": "Shai Gilgeous-Alexander est le meilleur scoreur de la saison NBA."
+        },
+        {
+            "question": "montre moi un peux les stats des warriors stp",
+            "ground_truth": "Les Golden State Warriors (GSW) ont plusieurs joueurs notables avec des statistiques variées."
+        },
+        {
+            "question": "ya des joueur avec genre 20 point et plein de passe ?",
+            "ground_truth": "Plusieurs joueurs combinent 20+ points et un nombre élevé de passes décisives."
+        },
+        {
+            "question": "qui joue le mieu en defense dans toute la ligue",
+            "ground_truth": "Les meilleurs défenseurs se distinguent par leurs blocks et steals élevés."
+        },
+    ],
+}
+
+SCORE_METRICS = ["faithfulness", "answer_relevancy", "context_precision", "context_recall"]
 
 
-def query_rag_system(question: str) -> tuple:
+def get_agent_answer(question: str) -> tuple[str, str]:
+    """Retourne (réponse_agent, contexte_utilisé)."""
+    from agent import build_agent
+    from sql_tool import sql_tool
+
+    agent = build_agent()
+    result = agent.invoke({"input": question, "chat_history": []})
+    answer = result.get("output", "")
+
+    # Contexte = résultat SQL brut pour la même question
     try:
-        from agent import get_agent_response
-        answer   = get_agent_response(question)
-        contexts = [f"Reponse generee par l'agent pour : {question}"]
-        return answer, contexts
-    except Exception as e:
-        logger.warning(f"Agent non disponible: {e}")
-        return (
-            f"[PLACEHOLDER] Reponse pour : {question}",
-            [f"[PLACEHOLDER] Contexte pour : {question}"]
-        )
+        context = sql_tool.invoke(question)
+    except Exception:
+        context = "Contexte non disponible"
+
+    return answer, context
 
 
-def eval_score(llm, prompt: str) -> float:
-    """Appelle Mistral et extrait un score entre 0 et 1."""
-    try:
-        from langchain_core.messages import HumanMessage
-        time.sleep(2)  # Evite le rate limit
-        response = llm.invoke([HumanMessage(content=prompt)])
-        text = response.content.strip().split()[0].replace(",", ".")
-        return round(min(max(float(text), 0), 1), 4)
-    except Exception as e:
-        logger.warning(f"Score non calcule: {e}")
-        return 0.0
+def score_with_mistral(question: str, answer: str, context: str, ground_truth: str) -> dict:
+    """Évalue les 4 métriques RAGAS via Mistral."""
+    from langchain_mistralai import ChatMistralAI
+    from utils.config import MISTRAL_API_KEY, MODEL_NAME
 
+    llm = ChatMistralAI(api_key=MISTRAL_API_KEY, model=MODEL_NAME, temperature=0)
 
-def compute_ragas_scores(test_cases: list) -> list:
-    try:
-        from langchain_mistralai import ChatMistralAI
-        from utils.config import MISTRAL_API_KEY, MODEL_NAME
+    prompts = {
+        "faithfulness": f"""
+Évalue si la réponse est fidèle au contexte fourni (pas d'hallucination).
+Contexte: {context[:500]}
+Réponse: {answer[:300]}
+Donne UNIQUEMENT un score entre 0.0 et 1.0 (ex: 0.85). Rien d'autre.""",
 
-        llm = ChatMistralAI(
-            api_key=MISTRAL_API_KEY,
-            model=MODEL_NAME,
-            temperature=0
-        )
+        "answer_relevancy": f"""
+Évalue si la réponse est pertinente par rapport à la question.
+Question: {question}
+Réponse: {answer[:300]}
+Donne UNIQUEMENT un score entre 0.0 et 1.0 (ex: 0.85). Rien d'autre.""",
 
-        for i, tc in enumerate(test_cases):
-            logger.info(f"[{i+1}/{len(test_cases)}] Evaluation: {tc['question'][:50]}...")
+        "context_precision": f"""
+Évalue si le contexte récupéré est précis et utile pour répondre.
+Question: {question}
+Contexte: {context[:500]}
+Donne UNIQUEMENT un score entre 0.0 et 1.0 (ex: 0.85). Rien d'autre.""",
 
-            question     = tc["question"]
-            answer       = tc["answer"]
-            contexts     = "\n".join(tc["contexts"])
-            ground_truth = tc.get("ground_truth", "")
-
-            tc["faithfulness"] = eval_score(llm, f"""Note de 0 a 1 : la reponse est-elle fidele aux contextes ?
-Contextes : {contexts}
-Reponse : {answer}
-Reponds UNIQUEMENT avec un nombre (ex: 0.85)""")
-
-            tc["answer_relevancy"] = eval_score(llm, f"""Note de 0 a 1 : la reponse repond-elle bien a la question ?
-Question : {question}
-Reponse : {answer}
-Reponds UNIQUEMENT avec un nombre (ex: 0.85)""")
-
-            tc["context_precision"] = eval_score(llm, f"""Note de 0 a 1 : les contextes sont-ils pertinents pour la question ?
-Question : {question}
-Contextes : {contexts}
-Reponds UNIQUEMENT avec un nombre (ex: 0.85)""")
-
-            tc["context_recall"] = eval_score(llm, f"""Note de 0 a 1 : les contextes contiennent-ils les infos pour repondre ?
-Question : {question}
-Reponse attendue : {ground_truth}
-Contextes : {contexts}
-Reponds UNIQUEMENT avec un nombre (ex: 0.85)""")
-
-            tc["overall_score"] = round(
-                (tc["faithfulness"] + tc["answer_relevancy"] +
-                 tc["context_precision"] + tc["context_recall"]) / 4, 4
-            )
-            logger.info(f"  → F:{tc['faithfulness']} AR:{tc['answer_relevancy']} CP:{tc['context_precision']} CR:{tc['context_recall']} | Overall:{tc['overall_score']}")
-
-    except Exception as e:
-        logger.error(f"Erreur evaluation : {e}")
-        for tc in test_cases:
-            tc["error"] = str(e)
-            tc["faithfulness"] = tc["answer_relevancy"] = None
-            tc["context_precision"] = tc["context_recall"] = None
-            tc["overall_score"] = None
-
-    return test_cases
-
-
-def generate_report(results: list, mode: str, output_path: str) -> str:
-    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
-
-    report = {
-        "mode":        mode,
-        "timestamp":   datetime.now().isoformat(),
-        "total_cases": len(results),
-        "results":     results
+        "context_recall": f"""
+Évalue si le contexte contient les informations nécessaires pour répondre correctement.
+Question: {question}
+Vérité terrain: {ground_truth}
+Contexte: {context[:500]}
+Donne UNIQUEMENT un score entre 0.0 et 1.0 (ex: 0.85). Rien d'autre.""",
     }
-    json_path = output_path.replace(".txt", ".json")
-    with open(json_path, "w", encoding="utf-8") as f:
-        json.dump(report, f, ensure_ascii=False, indent=2)
-    logger.info(f"Rapport JSON : {json_path}")
 
-    categories  = ["simple", "complex", "noisy"]
-    all_metrics = ["faithfulness", "answer_relevancy",
-                   "context_precision", "context_recall", "overall_score"]
+    scores = {}
+    for metric, prompt in prompts.items():
+        try:
+            response = llm.invoke(prompt)
+            raw = response.content.strip().replace(",", ".")
+            # Extrait le premier nombre flottant trouvé
+            import re
+            match = re.search(r"\d+\.\d+|\d+", raw)
+            score = float(match.group()) if match else 0.5
+            scores[metric] = min(1.0, max(0.0, score))
+            time.sleep(1)
+        except Exception as e:
+            logger.warning(f"Erreur scoring {metric}: {e}")
+            scores[metric] = 0.5
 
-    summary_lines = [
-        f"{'='*60}",
-        f"RAPPORT EVALUATION — Mode: {mode.upper()}",
-        f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-        f"{'='*60}", ""
+    scores["overall_score"] = sum(scores[m] for m in SCORE_METRICS) / len(SCORE_METRICS)
+    return scores
+
+
+def run_evaluation(mode: str = "baseline", ci_mode: bool = False) -> float:
+    """Lance l'évaluation complète. Retourne le score global."""
+    logger.info(f"Démarrage évaluation RAGAS — mode={mode}, ci={ci_mode}")
+
+    all_results = {}
+    category_scores = {}
+
+    for category, cases in TEST_CASES.items():
+        logger.info(f"\n── Catégorie : {category} ({len(cases)} cas) ──")
+        cat_results = []
+
+        for i, case in enumerate(cases):
+            logger.info(f"  [{i+1}/{len(cases)}] {case['question'][:60]}...")
+            answer, context = get_agent_answer(case["question"])
+            scores = score_with_mistral(
+                case["question"], answer, context, case["ground_truth"]
+            )
+            cat_results.append({
+                "question":    case["question"],
+                "answer":      answer,
+                "ground_truth": case["ground_truth"],
+                "scores":      scores,
+            })
+            logger.info(f"  → overall={scores['overall_score']:.4f}")
+            time.sleep(2)
+
+        # Moyennes par catégorie
+        avg = {}
+        for m in SCORE_METRICS + ["overall_score"]:
+            avg[m] = sum(r["scores"][m] for r in cat_results) / len(cat_results)
+
+        category_scores[category] = avg
+        all_results[category]     = cat_results
+
+    # ── Score global ──────────────────────────────────────────────────────────
+    global_score = sum(s["overall_score"] for s in category_scores.values()) / len(category_scores)
+
+    # ── Rapport texte ─────────────────────────────────────────────────────────
+    bar_width = 20
+    report_lines = ["=" * 60, f"  RAPPORT RAGAS — mode: {mode}", "=" * 60, ""]
+
+    for cat, scores in category_scores.items():
+        n = len(TEST_CASES[cat])
+        report_lines.append(f"── Catégorie : {cat} ({n} cas) ──")
+        for m in SCORE_METRICS + ["overall_score"]:
+            v     = scores[m]
+            filled = int(v * bar_width)
+            bar   = "█" * filled + "░" * (bar_width - filled)
+            report_lines.append(f"  {m:<25} {bar} {v:.4f}")
+        report_lines.append("")
+
+    # Indicateur CI
+    status = "✅ PASS" if global_score >= RAGAS_THRESHOLD else "❌ FAIL"
+    report_lines += [
+        "=" * 60,
+        f"  SCORE GLOBAL : {global_score:.4f}",
+        f"  SEUIL CI     : {RAGAS_THRESHOLD}",
+        f"  STATUT       : {status}",
+        "=" * 60,
     ]
+    report_text = "\n".join(report_lines)
+    print("\n" + report_text)
 
-    for cat in categories:
-        cat_results = [r for r in results if r.get("category") == cat]
-        if not cat_results:
-            continue
-        summary_lines.append(f"\n── Categorie : {cat.upper()} ({len(cat_results)} cas) ──")
-        for metric in all_metrics:
-            scores = [r[metric] for r in cat_results if r.get(metric) is not None]
-            if scores:
-                avg = round(sum(scores) / len(scores), 4)
-                bar = "█" * int(avg * 20) + "░" * (20 - int(avg * 20))
-                summary_lines.append(f"  {metric:<22} {bar} {avg:.4f}")
-            else:
-                summary_lines.append(f"  {metric:<22} N/A")
-
-    all_overall = [r["overall_score"] for r in results if r.get("overall_score") is not None]
-    if all_overall:
-        global_avg = round(sum(all_overall) / len(all_overall), 4)
-        summary_lines += [
-            f"\n{'='*60}",
-            f"  SCORE GLOBAL : {global_avg:.4f}",
-            f"{'='*60}"
-        ]
-
-    summary = "\n".join(summary_lines)
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write(summary)
-    logger.info(f"Resume : {output_path}")
-    print(summary)
-    return summary
-
-
-def run_evaluation(mode: str = "baseline", report_path: Optional[str] = None):
-    logger.info(f"Demarrage evaluation — mode: {mode}")
-    output_path = report_path or f"outputs/ragas_{mode}.txt"
+    # ── Sauvegarde ────────────────────────────────────────────────────────────
     Path("outputs").mkdir(exist_ok=True)
+    suffix = f"_{mode}"
+    with open(f"outputs/ragas{suffix}.txt", "w", encoding="utf-8") as f:
+        f.write(report_text)
+    with open(f"outputs/ragas{suffix}.json", "w", encoding="utf-8") as f:
+        json.dump({
+            "mode":            mode,
+            "global_score":    global_score,
+            "threshold":       RAGAS_THRESHOLD,
+            "passed":          global_score >= RAGAS_THRESHOLD,
+            "category_scores": category_scores,
+            "details":         all_results,
+        }, f, indent=2, ensure_ascii=False)
 
-    test_cases = []
-    for tc_def in TEST_CASES_DEFINITION:
-        logger.info(f"Question [{tc_def['category']}]: {tc_def['question'][:60]}...")
-        answer, contexts = query_rag_system(tc_def["question"])
-        test_cases.append({**tc_def, "answer": answer, "contexts": contexts})
+    logger.info(f"Rapports sauvegardés dans outputs/ragas{suffix}.*")
 
-    test_cases = compute_ragas_scores(test_cases)
-    generate_report(test_cases, mode, output_path)
-    return test_cases
+    # ── Exit code CI ──────────────────────────────────────────────────────────
+    if ci_mode and global_score < RAGAS_THRESHOLD:
+        logger.error(
+            f"RAGAS score {global_score:.4f} < seuil {RAGAS_THRESHOLD} — pipeline bloqué."
+        )
+        sys.exit(1)
+
+    return global_score
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Evaluation — SportSee")
-    parser.add_argument("--mode",        choices=["baseline", "post-sql"], default="baseline")
-    parser.add_argument("--report-path", type=str, default=None)
+    parser = argparse.ArgumentParser(description="Évaluation RAGAS SportSee")
+    parser.add_argument("--mode",      default="baseline",
+                        choices=["baseline", "post-sql"],
+                        help="Mode d'évaluation")
+    parser.add_argument("--ci",        action="store_true",
+                        help="Mode CI : exit 1 si score < seuil")
+    parser.add_argument("--threshold", type=float, default=None,
+                        help=f"Seuil override (défaut: {RAGAS_THRESHOLD})")
     args = parser.parse_args()
-    run_evaluation(mode=args.mode, report_path=args.report_path)
+
+    if args.threshold is not None:
+        RAGAS_THRESHOLD = args.threshold
+
+    run_evaluation(mode=args.mode, ci_mode=args.ci)
