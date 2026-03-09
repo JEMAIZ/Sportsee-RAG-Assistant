@@ -1,4 +1,5 @@
-# agent.py
+# agent.py contient la logique principale de l'agent LangChain, 
+# l'intégration des tools, et la gestion du cache sémantique.
 import os
 import logging
 from typing import Optional
@@ -28,7 +29,6 @@ from utils.config import MISTRAL_API_KEY, MODEL_NAME
 from semantic_cache import get_cache
 
 logger = logging.getLogger(__name__)
-
 
 # ── RAG Tool ──────────────────────────────────────────────────────────────────
 @tool
