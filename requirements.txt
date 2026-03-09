@@ -40,3 +40,7 @@ logfire[sqlalchemy]
 python-dotenv
 requests
 tqdm
+
+# === Cache sémantique ===
+redis>=5.0.0
+numpy
