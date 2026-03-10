@@ -8,7 +8,7 @@
 **Assistant IA NBA stats** : NL → SQL/graphiques/RAG docs. **ESN use cases** : reporting projets, insights clients, knowledge base.
 
 **[BOOK Demo ESN Pack → TON CALENDLY]**
-
+Calendly Demo : [BOOK DEMO → https://calendly.com/jemai/demo-ia-esn-15min
 ## 🎯 Use Cases ESN / Cabinets Conseil
 - **Reporting KPI** : RAG analytics projets (comme sport → business metrics).
 - **Insights data** : Recommandations automatisées clients PME.
@@ -63,6 +63,6 @@ n8n-leadgen-esn-demo : Prospection auto.
 
 n8n-reporting-esn : KPI projets.
 
-Custom RAG/ESN : [TON CALENDLY]
+Custom RAG/ESN : Calendly Demo : [BOOK DEMO → https://calendly.com/jemai/demo-ia-esn-15min
 
 ⭐ Star si testé ! #RAG #ESN #IA #Streamlit
