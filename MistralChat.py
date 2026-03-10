@@ -4,6 +4,8 @@ import logging
 import re
 from pathlib import Path
 
+from agent import get_agent_response
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -121,8 +123,9 @@ def run_prompt(prompt: str):
                     elif msg["role"] == "assistant":
                         history.append(AIMessage(content=msg["content"]))
                 try:
-                    result     = agent_executor.invoke({"input": prompt, "chat_history": history})
-                    raw_output = result.get("output", "Désolé, pas de réponse.")
+                    #result     = agent_executor.invoke({"input": prompt, "chat_history": history})
+                    from agent import get_agent_response
+                    raw_output = get_agent_response(prompt,history)
 
                     if "GRAPH_FILE:" in raw_output:
                         parts           = raw_output.split("GRAPH_FILE:", 1)

@@ -35,6 +35,16 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
+      # ── NOUConfigurer clé sur Github  ─────────────────────────────────────────────────────────────
+      - name: Verify secret is available
+        run: |
+          if [ -z "${{ secrets.MISTRAL_API_KEY }}" ]; then
+            echo "❌ MISTRAL_API_KEY not set"
+            exit 1
+          else
+            echo "✅ MISTRAL_API_KEY is set"
+          fi
+
       # ── 4. Base de données de test ──────────────────────────────────────────
       - name: Setup test database
         env:

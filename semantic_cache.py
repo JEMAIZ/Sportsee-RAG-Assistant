@@ -22,8 +22,8 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# Seuil de similarité cosine : 0.92 = questions très proches
-SIMILARITY_THRESHOLD = 0.92
+# Seuil de similarité cosine : 0.80 = questions proches
+SIMILARITY_THRESHOLD = 0.80
 # TTL du cache : 24h (en secondes)
 CACHE_TTL = 86400
 
