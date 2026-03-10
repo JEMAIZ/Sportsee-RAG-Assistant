@@ -63,6 +63,7 @@ n8n-leadgen-esn-demo : Prospection auto.
 
 n8n-reporting-esn : KPI projets.
 
-Custom RAG/ESN : Calendly Demo : [BOOK DEMO → https://calendly.com/jemai/demo-ia-esn-15min
+Custom RAG/ESN : Calendly Demo : [BOOK DEMO →
+https://calendly.com/jemai/demo-ia-esn-15min
 
 ⭐ Star si testé ! #RAG #ESN #IA #Streamlit
